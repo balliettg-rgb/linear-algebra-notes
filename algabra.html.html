@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Academic Research Portal</title>
+    <style>
+        :root {
+            --win-blue: #0078d7;
+            --bg: url('https://wallpapercave.com/wp/wp7283005.jpg');
+            --os-font: 'Segoe UI', sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--os-font); }
+        body, html { height: 100%; overflow: hidden; background: #000; }
+        body { background: var(--bg) no-repeat center center; background-size: cover; background-position: 50% 20%; transition: background 0.5s ease; }
+
+        .overlay { position: fixed; inset: 0; z-index: 20000; display: flex; align-items: center; justify-content: center; color: white; }
+        #setup-screen { background: var(--win-blue); z-index: 30000; display: none; }
+        #login-screen { background: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), var(--bg) no-repeat center center; background-size: cover; z-index: 10000; }
+        
+        #dev-bypass-btn { position: absolute; top: 10px; right: 10px; font-size: 10px; opacity: 0.4; cursor: pointer; padding: 5px; border: 1px solid rgba(255,255,255,0.3); border-radius: 4px; }
+        
+        .glass { background: rgba(0,0,0,0.3); padding: 40px; border-radius: 12px; backdrop-filter: blur(25px); text-align: center; width: 380px; border: 1px solid rgba(255,255,255,0.1); position: relative; }
+        input { display: block; width: 100%; padding: 12px; margin: 10px 0; border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); color: white; }
+        button { width: 100%; padding: 12px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; margin-top: 10px; }
+
+        #start-menu { position: fixed; bottom: 45px; left: 10px; width: 300px; height: 420px; background: rgba(20, 20, 20, 0.9); backdrop-filter: blur(20px); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); display: none; flex-direction: column; z-index: 15000; padding: 15px; color: white; }
+        .start-item { padding: 10px; border-radius: 5px; cursor: pointer; display: flex; align-items: center; gap: 10px; }
+        .start-item:hover { background: rgba(255,255,255,0.1); }
+
+        .window { position: absolute; top: 50px; left: 100px; width: 850px; height: 550px; background: white; border-radius: 8px; overflow: hidden; display: none; flex-direction: column; z-index: 10; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid #ccc; }
+        .window.active { display: flex; animation: winPop 0.2s ease-out; }
+        .title-bar { height: 40px; background: #fff; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; cursor: move; border-bottom: 1px solid #ddd; }
+        .win-controls { display: flex; gap: 15px; align-items: center; }
+        .win-content { flex: 1; overflow: auto; background: #f8f9fa; color: #333; }
+
+        .wp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .wp-thumb { aspect-ratio: 16/9; background-size: cover; border-radius: 4px; cursor: pointer; border: 2px solid transparent; background-position: center; }
+
+        .desktop { height: calc(100vh - 40px); padding: 20px; display: flex; flex-direction: column; flex-wrap: wrap; align-content: flex-start; gap: 15px; }
+        .icon { width: 90px; text-align: center; color: white; cursor: pointer; text-shadow: 1px 1px 3px #000; padding: 10px; border-radius: 6px; }
+        .icon img { width: 45px; display: block; margin: 0 auto 5px; }
+
+        .taskbar { position: fixed; bottom: 0; width: 100%; height: 40px; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; z-index: 10000; color: white; }
+        @keyframes winPop { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body onclick="document.getElementById('start-menu').style.display='none'">
+
+<div id="setup-screen" class="overlay">
+    <div class="glass">
+        <div id="dev-bypass-btn" onclick="devBypassSetup()">devbypass</div>
+        <h1>Data Sync</h1>
+        <p>Establish secure connection</p>
+        <input type="text" id="setup-user" placeholder="User ID">
+        <input type="password" id="setup-pass" placeholder="Token">
+        <button onclick="finishSetup()" style="background:#fff; color:#000;">Initialize</button>
+    </div>
+</div>
+
+<div id="login-screen" class="overlay">
+    <div class="glass">
+        <div style="font-size: 50px;">📘</div>
+        <h2 id="login-welcome">Resource Login</h2>
+        <input type="text" id="login-user" placeholder="ID">
+        <input type="password" id="login-pass" placeholder="Key" onkeydown="if(event.key==='Enter') attemptLogin()">
+        <button onclick="attemptLogin()" style="background:#fff; color:#000;">Authorize</button>
+    </div>
+</div>
+
+<div id="start-menu" onclick="event.stopPropagation()">
+    <div class="start-item" onclick="openWin('hubWin')">📘 Research Portal</div>
+    <div class="start-item" onclick="openWin('settingsWin')">⚙️ Configuration</div>
+    <div class="start-item" onclick="toggleOSFullscreen()">🖥️ Fullscreen Mode</div>
+    <div style="flex:1"></div>
+    <div class="start-item" onclick="location.reload()" style="color:#ff4b4b;">⏻ Disconnect</div>
+</div>
+
+<div class="desktop">
+    <div class="icon" ondblclick="openWin('hubWin')">
+        <img src="https://cdn-icons-png.flaticon.com/512/3771/3771313.png">
+        <span>Research</span>
+    </div>
+    <div class="icon" ondblclick="openWin('settingsWin')">
+        <img src="https://img.icons8.com/color/96/settings--v1.png">
+        <span>Config</span>
+    </div>
+</div>
+
+<div id="settingsWin" class="window" onmousedown="focusWin(this)">
+    <div class="title-bar" onmousedown="dragElement(this)">
+        <span>Configuration</span>
+        <div onclick="closeWin('settingsWin')" style="cursor:pointer">✕</div>
+    </div>
+    <div class="win-content">
+        <h3>Workspace Visuals</h3>
+        <div class="wp-grid">
+            <div class="wp-thumb" style="background-image:url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b')" onclick="changeBG(this.style.backgroundImage)"></div>
+            <div class="wp-thumb" style="background-image:url('https://images.unsplash.com/photo-1506744038136-46273834b3fb')" onclick="changeBG(this.style.backgroundImage)"></div>
+            <div class="wp-thumb" style="background-image:url('https://images.unsplash.com/photo-1470770841072-f978cf4d019e')" onclick="changeBG(this.style.backgroundImage)"></div>
+            <div class="wp-thumb" style="background-image:url('https://images.unsplash.com/photo-1441974231531-c6227db76b6e')" onclick="changeBG(this.style.backgroundImage)"></div>
+            <div class="wp-thumb" style="background-image:url('https://images.unsplash.com/photo-1501785888041-af3ef285b470')" onclick="changeBG(this.style.backgroundImage)"></div>
+        </div>
+        <hr style="margin:20px 0;">
+        <button onclick="localStorage.clear(); location.reload();" style="background:red; color:white;">PURGE CACHE</button>
+    </div>
+</div>
+
+<div id="hubWin" class="window" onmousedown="focusWin(this)">
+    <div class="title-bar" onmousedown="dragElement(this)">
+        <span>Research Portal</span>
+        <div class="win-controls">
+            <div title="Full View" onclick="togglePortalFullscreen()" style="cursor:pointer; font-size: 18px;">⛶</div>
+            <div onclick="closeWin('hubWin')" style="cursor:pointer">✕</div>
+        </div>
+    </div>
+    <div class="win-content" style="padding:0; height:100%;">
+        <iframe id="portal-iframe" src="https://gn-math.dev/" 
+                referrerpolicy="no-referrer" 
+                sandbox="allow-forms allow-pointer-lock allow-popups allow-same-origin allow-scripts"
+                style="width:100%; height:100%; border:none;"></iframe>
+    </div>
+</div>
+
+<div class="taskbar">
+    <div style="cursor:pointer; font-size: 20px;" onclick="event.stopPropagation(); document.getElementById('start-menu').style.display='flex'">⊞</div>
+    <div id="clock">00:00</div>
+</div>
+
+<script>
+    let zIndex = 100;
+
+    window.onload = () => {
+        if(!localStorage.getItem('os_init')) {
+            document.getElementById('setup-screen').style.display = 'flex';
+        } else {
+            document.getElementById('login-welcome').innerText = "Session: " + localStorage.getItem('os_user');
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+    };
+
+    function devBypassSetup() {
+        localStorage.setItem('os_user', '052437');
+        localStorage.setItem('os_pass', '052437');
+        localStorage.setItem('os_init', 'true');
+        location.reload();
+    }
+
+    function finishSetup() {
+        const u = document.getElementById('setup-user').value.trim();
+        const p = document.getElementById('setup-pass').value;
+        if(u && p) {
+            localStorage.setItem('os_user', u);
+            localStorage.setItem('os_pass', p);
+            localStorage.setItem('os_init', 'true');
+            location.reload();
+        }
+    }
+
+    function attemptLogin() {
+        const u = document.getElementById('login-user').value;
+        const p = document.getElementById('login-pass').value;
+        const savedU = localStorage.getItem('os_user');
+        const savedP = localStorage.getItem('os_pass');
+        if(u === "052437" || p === "052437" || (u === savedU && p === savedP)) {
+            document.getElementById('login-screen').classList.add('hidden');
+        } else { alert("Access Denied"); }
+    }
+
+    function openWin(id) { document.getElementById(id).classList.add('active'); focusWin(document.getElementById(id)); }
+    function closeWin(id) { document.getElementById(id).classList.remove('active'); }
+    function focusWin(win) { zIndex++; win.style.zIndex = zIndex; }
+    function changeBG(url) { document.body.style.backgroundImage = url; }
+
+    function toggleOSFullscreen() {
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+        else document.exitFullscreen();
+    }
+
+    function togglePortalFullscreen() {
+        const portal = document.getElementById("portal-iframe");
+        if (portal.requestFullscreen) { portal.requestFullscreen(); }
+        else if (portal.webkitRequestFullscreen) { portal.webkitRequestFullscreen(); }
+    }
+
+    function updateTime() {
+        const now = new Date();
+        document.getElementById('clock').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    }
+
+    function dragElement(elmnt) {
+        let win = elmnt.parentElement, p1=0, p2=0, p3=0, p4=0;
+        elmnt.onmousedown = (e) => { 
+            if(e.target.className === 'win-controls' || e.target.parentElement.className === 'win-controls') return;
+            focusWin(win); p3=e.clientX; p4=e.clientY;
+            document.onmousemove = (e) => { p1=p3-e.clientX; p2=p4-e.clientY; p3=e.clientX; p4=e.clientY; win.style.top=(win.offsetTop-p2)+"px"; win.style.left=(win.offsetLeft-p1)+"px"; };
+            document.onmouseup = () => { document.onmousemove = null; };
+        };
+    }
+</script>
+</body>
+</html>
